@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <style>
+        html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; }
+        body { font-family: sans-serif; }
+
+        /* Pin en forma de gota, con el color según el tipo de tarea */
+        .pin-icon { background: none; border: none; }
+        .pin {
+            position: absolute; left: 50%; top: 50%;
+            width: 22px; height: 22px; margin: -13px 0 0 -13px;
+            border: 2px solid #fff; border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            box-shadow: 0 1px 5px rgba(0,0,0,.5);
+        }
+        .pin::after {
+            content: ''; position: absolute; left: 50%; top: 50%;
+            width: 8px; height: 8px; margin: -4px 0 0 -4px;
+            background: #fff; border-radius: 50%;
+        }
+
+        #legend {
+            position: absolute; left: 8px; bottom: 28px; z-index: 1000;
+            background: rgba(255,255,255,.92); padding: 6px 8px; border-radius: 6px;
+            font-size: 11px; line-height: 1.6; box-shadow: 0 1px 4px rgba(0,0,0,.3);
+        }
+        #legend .dot {
+            display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+            margin-right: 5px; vertical-align: middle;
+        }
+        #notice {
+            display: none; position: absolute; top: 8px; left: 50%; z-index: 2000;
+            transform: translateX(-50%); max-width: 90%; text-align: center;
+            background: #fff3cd; color: #664d03; border: 1px solid #ffecb5;
+            padding: 6px 12px; border-radius: 6px; font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+<div id="map"></div>
+<div id="legend"></div>
+<div id="notice"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script>
+    var TYPE_COLORS = {
+        'Revisión de colmena': '#2E7D32',
+        'Alimentación': '#F9A825',
+        'Cosecha de miel': '#EF6C00',
+        'Plaga/Incidente': '#D32F2F',
+        'Tratamiento sanitario': '#7B1FA2'
+    };
+    var DEFAULT_COLOR = '#546E7A';
+
+    var ready = (typeof L !== 'undefined');
+    var map, osmLayer, satelliteLayer, currentLayer, markersLayer;
+    var firstFit = true;
+
+    function showNotice(msg) {
+        var n = document.getElementById('notice');
+        n.textContent = msg;
+        n.style.display = 'block';
+    }
+    function hideNotice() {
+        document.getElementById('notice').style.display = 'none';
+    }
+
+    // Escapa texto para insertarlo de forma segura dentro de HTML
+    function esc(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
+    if (!ready) {
+        showNotice('No se pudo cargar el mapa. Revisa tu conexión a internet.');
+    } else {
+        map = L.map('map').setView([4.6097, -74.0817], 12);
+
+        osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        });
+        satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19,
+            attribution: 'Tiles © Esri'
+        });
+
+        [osmLayer, satelliteLayer].forEach(function (layer) {
+            layer.on('tileerror', function () {
+                showNotice('Sin conexión: el mapa necesita internet para mostrarse.');
+            });
+            layer.on('tileload', hideNotice);
+        });
+
+        currentLayer = osmLayer.addTo(map);
+        // Agrupa pines cercanos o superpuestos; si la librería no cargó, usa el grupo normal
+        markersLayer = (typeof L.markerClusterGroup === 'function')
+            ? L.markerClusterGroup({
+            showCoverageOnHover: false,
+            spiderfyOnMaxZoom: true,
+            maxClusterRadius: 40
+        })
+        : L.featureGroup();
+        markersLayer.addTo(map);
+
+        // Leyenda de colores
+        var legend = '';
+        Object.keys(TYPE_COLORS).forEach(function (k) {
+            legend += '<div><span class="dot" style="background:' + TYPE_COLORS[k] + '"></span>' + k + '</div>';
+        });
+        document.getElementById('legend').innerHTML = legend;
+    }
+
+    function setLayer(type) {
+        if (!ready) return;
+        map.removeLayer(currentLayer);
+        currentLayer = (type === 'satellite' ? satelliteLayer : osmLayer).addTo(map);
+    }
+
+    function popupHtml(t) {
+        var color = TYPE_COLORS[t.type] || DEFAULT_COLOR;
+        var h = '<div style="min-width:160px">';
+        h += '<b>' + esc(t.title) + '</b><br>';
+        h += '<span style="color:' + color + ';font-weight:bold">' + esc(t.type) + '</span> · ' + esc(t.status) + '<br>';
+        if (t.apiary) h += 'Colmena: ' + esc(t.apiary) + '<br>';
+        h += '📍 ' + esc(t.address || 'Sin dirección') + '<br>';
+        h += '<small>Por: ' + esc(t.author) + '</small>';
+        if (t.image && String(t.image).indexOf('https://') === 0) {
+            h += '<br><img src="' + esc(t.image) + '" style="width:100%;margin-top:6px;border-radius:6px">';
+        }
+        return h + '</div>';
+    }
+
+    // Recibe el JSON como texto (ya escapado desde Java) y lo convierte
+    function addMarkers(json) {
+        if (!ready) return;
+        markersLayer.clearLayers();
+        var tasks;
+        try { tasks = JSON.parse(json); } catch (e) { return; }
+
+        tasks.forEach(function (t) {
+            var lat = Number(t.latitude), lng = Number(t.longitude);
+            if (!isFinite(lat) || !isFinite(lng) || (lat === 0 && lng === 0)) return;
+
+            var color = TYPE_COLORS[t.type] || DEFAULT_COLOR;
+            var icon = L.divIcon({
+                className: 'pin-icon',
+                html: '<div class="pin" style="background:' + color + '"></div>',
+                iconSize: [30, 42],
+                iconAnchor: [15, 40],
+                popupAnchor: [0, -36]
+            });
+            var marker = L.marker([lat, lng], { icon: icon, title: t.title || '' });
+            marker.bindPopup(popupHtml(t), { maxWidth: 240 });
+            markersLayer.addLayer(marker);
+        });
+
+        // Ajusta el zoom solo la primera vez, para no mover el mapa mientras el usuario navega
+        if (firstFit && markersLayer.getLayers().length > 0) {
+            fitAll();
+            firstFit = false;
+        }
+    }
+
+    function fitAll() {
+        if (!ready || markersLayer.getLayers().length === 0) return;
+        map.fitBounds(markersLayer.getBounds(), { padding: [40, 40], maxZoom: 17 });
+    }
+</script>
+</body>
+</html>

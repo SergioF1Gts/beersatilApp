@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "889476903426",
+    "project_id": "misfinanzascloud",
+    "storage_bucket": "misfinanzascloud.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:889476903426:android:786fed0b3951ece702ad1b",
+        "android_client_info": {
+          "package_name": "com.example.beersatil"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "889476903426-9pfsmoie42o9p3gqt2vv9lleqi7uj18u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD6Tz0X-vjRVs_vgRP79wxSkgsI-qUl-JU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "889476903426-9pfsmoie42o9p3gqt2vv9lleqi7uj18u.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:889476903426:android:ed732eb57a149b9002ad1b",
+        "android_client_info": {
+          "package_name": "com.sergio.misfinanzas"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "889476903426-9pfsmoie42o9p3gqt2vv9lleqi7uj18u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD6Tz0X-vjRVs_vgRP79wxSkgsI-qUl-JU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "889476903426-9pfsmoie42o9p3gqt2vv9lleqi7uj18u.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
